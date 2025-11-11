@@ -1,6 +1,6 @@
 
 import pandas as pd
-from test_base import TradesBaseTest
+from tests.test_base import TradesBaseTest
 from src.moneycounter.pnl import realized_gains
 
 
