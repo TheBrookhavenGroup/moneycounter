@@ -288,3 +288,84 @@ def realized_gains(trades_df, year):
         pnl.reset_index(drop=True, inplace=True)
 
     return pnl
+
+
+def lifo_remove(df):
+    """
+    Remove all trades that are closed out by LIFO matching.
+    Assume the input df position (sum of q) is non-zero and that the running position
+    never crosses zero (i.e., prior realized trades have already been removed).
+
+    This mirrors `fifo_remove(df)` but uses Last-In-First-Out consumption when
+    offsetting opposing trades. The sum of quantities is preserved.
+
+    :param df: Pandas DataFrame with at least column 'q'. Other columns are preserved.
+    :return: DataFrame containing only the remaining open quantity rows per LIFO.
+    """
+
+    if df.empty:
+        return df
+
+    # Work on a copy to avoid mutating the caller's DataFrame
+    result = df.copy()
+
+    position = result.q.sum()
+    if is_near_zero(position):
+        return result.head(0)
+
+    # Normalize so that the net position is positive; flip signs if net is short.
+    flipped = False
+    if position < 0:
+        result.loc[:, 'q'] *= -1
+        flipped = True
+
+    # LIFO stack of open legs: list of (row_index, remaining_qty)
+    stack = []
+
+    # We will zero out all rows first; then put remaining open amounts back.
+    result.loc[:, 'q'] = result.q.astype(float)
+
+    for idx, row in result.iterrows():
+        q = row.q
+        if is_near_zero(q):
+            result.at[idx, 'q'] = 0.0
+            continue
+
+        if q > 0:
+            # Open leg (buy in normalized space): push to stack
+            stack.append([idx, float(q)])
+            result.at[idx, 'q'] = 0.0
+        else:
+            # Closing leg (sell in normalized space): consume from most recent opens
+            to_close = float(-q)
+            result.at[idx, 'q'] = 0.0
+            while to_close > 1e-10:
+                if not stack:
+                    # Should not happen under stated assumptions, but guard anyway
+                    break
+                last_idx, last_qty = stack.pop()
+                if last_qty > to_close + 1e-12:
+                    # Partially consume the last open
+                    remaining = last_qty - to_close
+                    stack.append([last_idx, remaining])
+                    to_close = 0.0
+                elif abs(last_qty - to_close) <= 1e-12:
+                    # Exactly consumed
+                    to_close = 0.0
+                else:
+                    # Fully consume this open and continue
+                    to_close -= last_qty
+
+    # Restore remaining open quantities into their original rows
+    for open_idx, open_qty in stack:
+        result.at[open_idx, 'q'] = open_qty
+
+    # Keep only positive remaining legs (in normalized space)
+    result = result[result.q > 1e-10]
+
+    # Flip the sign back if we normalized for short positions
+    if flipped:
+        result.loc[:, 'q'] *= -1
+
+    result.reset_index(drop=True, inplace=True)
+    return result

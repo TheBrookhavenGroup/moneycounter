@@ -1,6 +1,7 @@
 
-from test_base import TradesBaseTest, fake_trades
-from src.moneycounter.pnl import unrealized, wap_calc, pnl_calc, split_adjust, fifo_remove, pnl
+from tests.test_base import TradesBaseTest, fake_trades
+import pandas as pd
+from src.moneycounter.pnl import unrealized, wap_calc, pnl_calc, fifo_remove, lifo_remove, pnl
 
 
 class PnLTests(TradesBaseTest):
@@ -99,6 +100,36 @@ class PnLTests(TradesBaseTest):
     def test_fifo_remove(self):
         self.fifo_remove_helper('ACCNT7')
         self.fifo_remove_helper('ACCNT8')
+
+    def lifo_remove_helper(self, net_sign=1):
+        # Build a simple sequence where cumulative sum never crosses zero
+        # Base positive sequence: 10, 5, -12, 17, 10, -20, 5
+        q = [10.0, 5.0, -12.0, 17.0, 10.0, -20.0, 5.0]
+        if net_sign < 0:
+            q = [-x for x in q]
+        df = pd.DataFrame({
+            'q': q,
+        })
+        before = sum(q)
+        out = lifo_remove(df)
+        after = out.q.sum()
+        # Sum preserved
+        self.assertAlmostEqual(before, after)
+        # No opposite-signed rows remain
+        if before > 0:
+            self.assertFalse((out.q <= 0).any())
+            expected = [3.0, 7.0, 5.0]
+        else:
+            self.assertFalse((out.q >= 0).any())
+            expected = [-3.0, -7.0, -5.0]
+        # Expect three remaining open legs with specific LIFO leftovers
+        self.assertEqual(list(out.q.round(8)), expected)
+
+    def test_lifo_remove(self):
+        # Test for net long position
+        self.lifo_remove_helper(net_sign=1)
+        # Test for net short position
+        self.lifo_remove_helper(net_sign=-1)
 
 
 class BigTests(TradesBaseTest):
