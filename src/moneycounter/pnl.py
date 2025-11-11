@@ -290,7 +290,6 @@ def realized_gains(trades_df, year):
     return pnl
 
 
-
 def lifo_remove(df):
     """
     Remove all trades that are closed out by LIFO matching.
