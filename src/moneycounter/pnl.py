@@ -173,7 +173,7 @@ def eliminate_before_sign_change(df):
     return df
 
 
-def unrealized(df):
+def unrealized(df, fifo=True):
     """
     Return a dataframe of split adjusted unrealized trades
 
@@ -189,7 +189,10 @@ def unrealized(df):
 
     unrealized_df = eliminate_before_sign_change(df)
     unrealized_df = split_adjust(unrealized_df)
-    unrealized_df = fifo_remove(unrealized_df)
+    if fifo:
+        unrealized_df = fifo_remove(unrealized_df)
+    else:
+        unrealized_df = lifo_remove(unrealized_df)
 
     unrealized_df = unrealized_df[unrealized_df.q != 0]
 
@@ -233,9 +236,9 @@ def pnl(df, price=0):
     return realized_pnl, unrealized_pnl, total
 
 
-def wap_calc(df):
+def wap_calc(df, fifo=True):
 
-    df = unrealized(df)
+    df = unrealized(df, fifo=fifo)
 
     if df.empty:
         return 0
