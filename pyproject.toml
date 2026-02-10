@@ -20,7 +20,7 @@ dependencies = ["pandas", "pytz", "tbgutils"]
 version = "1.4.3"
 
 [dependency-groups]
-dev = ["build", "packaging", "pycodestyle", "python-dateutil", "six", "tomli"]
+dev = ["build", "packaging", "pandas-stubs", "pycodestyle", "python-dateutil", "six", "tomli"]
 
 [project.urls]
 homepage = "https://github.com/schwarzschild/moneycounter"
