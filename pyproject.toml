@@ -16,8 +16,11 @@ classifiers = [
     "Topic :: Office/Business :: Financial :: Investment"
     ]
 license = {text = "MIT"}
-dependencies = ["pandas", "pytz"]
+dependencies = ["pandas", "pytz", "tbgutils"]
 version = "1.4.3"
+
+[dependency-groups]
+dev = ["build", "packaging", "pycodestyle", "python-dateutil", "six", "tomli"]
 
 [project.urls]
 homepage = "https://github.com/schwarzschild/moneycounter"
