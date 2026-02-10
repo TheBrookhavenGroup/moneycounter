@@ -23,6 +23,7 @@ def split_adjust(df):
     """
 
     df = df.copy()
+    df["q"] = df["q"].astype(float)
 
     # Find location i of last split, spits are identified by p=0
     split_trades_flags = df.p <= 1e-10
