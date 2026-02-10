@@ -20,7 +20,17 @@ dependencies = ["pandas", "pytz", "tbgutils"]
 version = "1.4.3"
 
 [dependency-groups]
-dev = ["build", "packaging", "pandas-stubs", "pycodestyle", "python-dateutil", "six", "tomli"]
+dev = ["black", "build", "packaging", "pandas-stubs", "pre-commit", "python-dateutil", "ruff", "six", "tomli"]
+
+[tool.ruff]
+line-length = 79
+extend-exclude = ["migrations", "node_modules", "static", ".tox", ".git"]
+
+[tool.ruff.lint]
+ignore = ["E402", "E501", "E741", "W605"]
+
+[tool.black]
+line-length = 79
 
 [project.urls]
 homepage = "https://github.com/schwarzschild/moneycounter"

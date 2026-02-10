@@ -20,9 +20,13 @@ jobs:
         run: |
           uv sync --group dev --frozen
 
-      - name: PEP8
+      - name: Lint
         run: |
-          uv run pycodestyle --config=./setup.cfg .
+          uv run ruff check .
+
+      - name: Format
+        run: |
+          uv run black --check .
 
       - name: Run tests
         run: |
