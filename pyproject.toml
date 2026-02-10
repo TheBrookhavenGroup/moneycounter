@@ -17,10 +17,10 @@ classifiers = [
     ]
 license = {text = "MIT"}
 dependencies = ["pandas", "pytz", "tbgutils"]
-version = "1.4.3"
+version = "1.4.4"
 
 [dependency-groups]
-dev = ["black", "build", "packaging", "pandas-stubs", "pre-commit", "python-dateutil", "ruff", "six", "tomli"]
+dev = ["black", "build", "packaging", "pandas-stubs", "pre-commit", "python-dateutil", "ruff", "six", "tomli", "twine"]
 
 [tool.ruff]
 line-length = 79
