@@ -1,5 +1,4 @@
 from datetime import date
-import numpy as np
 import pandas as pd
 from tbgutils.dt import day_start_next_day, day_start
 from tbgutils.str import is_near_zero
@@ -24,24 +23,25 @@ def split_adjust(df):
     """
 
     df = df.copy()
+    df["q"] = df["q"].astype(float)
 
     # Find location i of last split, spits are identified by p=0
     split_trades_flags = df.p <= 1e-10
     if not split_trades_flags.any():
         return df
 
-    df['csum'] = df.q.cumsum()
+    df["csum"] = df.q.cumsum()
 
     split_trades = df[split_trades_flags]
 
     for index, row in split_trades.iterrows():
         denominator = row.csum - row.q
         factor = row.csum / denominator
-        df.loc[:index, 'q'] *= factor
-        df.loc[:index, 'p'] /= factor
+        df.loc[:index, "q"] *= factor
+        df.loc[:index, "p"] /= factor
 
     df = df[~split_trades_flags]
-    df.drop(['csum'], axis=1)
+    df.drop(["csum"], axis=1)
 
     df.reset_index(drop=True, inplace=True)
 
@@ -50,27 +50,27 @@ def split_adjust(df):
 
 def fifo_remove(df):
     """
-    Remove all trades that are closed out.
-    Assume the input df position, i.e. cumsum, is always the same sign and not zero.
-    i.e. All previous realized trades are removed.
+     Remove all trades that are closed out.
+     Assume the input df position, i.e. cumsum, is always the same sign and not zero.
+     i.e. All previous realized trades are removed.
 
-    :param df:
-    :return:
+     :param df:
+     :return:
 
-    Example:
+     Example:
 
-    q    csum      q_new
+     q    csum      q_new
 
-    10    10
-     5    15
-   -12     3
-    17    20
-    10    30         10
-   -20    10
-    5     15          5
+     10    10
+      5    15
+    -12     3
+     17    20
+     10    30         10
+    -20    10
+     5     15          5
 
-    The sum(q) = sum(q_new) = 15
-    Left with only three rows
+     The sum(q) = sum(q_new) = 15
+     Left with only three rows
 
     """
 
@@ -90,11 +90,11 @@ def fifo_remove(df):
         q = -row.q
         flags = csum > q
         i = df[flags].index[0]
-        df.loc[:i, 'q'] = 0
+        df.loc[:i, "q"] = 0
         residual = csum.iloc[i] - q
         if not is_near_zero(residual):
-            df.at[i, 'q'] = residual
-        df.at[index, 'q'] = 0
+            df.at[i, "q"] = residual
+        df.at[index, "q"] = 0
 
         csum = df.q.cumsum()
 
@@ -103,7 +103,7 @@ def fifo_remove(df):
     df.reset_index(drop=True, inplace=True)
 
     if position < 0:
-        df.loc[:, 'q'] *= -1
+        df.loc[:, "q"] *= -1
 
     return df
 
@@ -163,8 +163,8 @@ def eliminate_before_sign_change(df):
 
     df = df.copy()
 
-    df.loc[:i, 'q'] = 0.0
-    df.loc[i, 'q'] = csum.loc[i]
+    df.loc[:i, "q"] = 0.0
+    df.loc[i, "q"] = csum.loc[i]
 
     df = df[df.q.abs() > 1e-10]
 
@@ -200,10 +200,10 @@ def unrealized(df, fifo=True):
 
 
 def pnl_calc(df, price=None):
-    '''
+    """
     :param df:  Trades data frame
     :return: profit or loss
-    '''
+    """
     if df.empty:
         return 0
 
@@ -268,23 +268,27 @@ def stocks_traded(trades_df, year):
     # Find any stock sells this year
     t1 = day_start(date(year, 1, 1))
     t2 = day_start_next_day(date(year, 12, 31))
-    mask = (trades_df['dt'] >= t1) & (trades_df['dt'] < t2)
+    mask = (trades_df["dt"] >= t1) & (trades_df["dt"] < t2)
     traded_df = trades_df.loc[mask]
     return traded_df
 
 
 def realized_gains(trades_df, year):
     traded_df = stocks_traded(trades_df, year)
-    traded_df = traded_df.loc[:, ['a', 't']]
+    traded_df = traded_df.loc[:, ["a", "t"]]
     traded_df = traded_df.drop_duplicates()
 
     # get only trades for a/t combos that had sold anything in the given year
-    df = pd.merge(trades_df, traded_df, how='inner', on=['a', 't'])
+    df = pd.merge(trades_df, traded_df, how="inner", on=["a", "t"])
 
     if df.empty:
-        pnl = pd.DataFrame(columns=['a', 't', 'realized'])
+        pnl = pd.DataFrame(columns=["a", "t", "realized"])
     else:
-        pnl = df.groupby(['a', 't']).apply(realized_gains_one, year).reset_index(name="realized")
+        pnl = (
+            df.groupby(["a", "t"])
+            .apply(realized_gains_one, year)
+            .reset_index(name="realized")
+        )
 
         # Eliminate zeros
         pnl = pnl.loc[pnl.realized != 0]
@@ -319,29 +323,29 @@ def lifo_remove(df):
     # Normalize so that the net position is positive; flip signs if net is short.
     flipped = False
     if position < 0:
-        result.loc[:, 'q'] *= -1
+        result.loc[:, "q"] *= -1
         flipped = True
 
     # LIFO stack of open legs: list of (row_index, remaining_qty)
     stack = []
 
     # We will zero out all rows first; then put remaining open amounts back.
-    result.loc[:, 'q'] = result.q.astype(float)
+    result.loc[:, "q"] = result.q.astype(float)
 
     for idx, row in result.iterrows():
         q = row.q
         if is_near_zero(q):
-            result.at[idx, 'q'] = 0.0
+            result.at[idx, "q"] = 0.0
             continue
 
         if q > 0:
             # Open leg (buy in normalized space): push to stack
             stack.append([idx, float(q)])
-            result.at[idx, 'q'] = 0.0
+            result.at[idx, "q"] = 0.0
         else:
             # Closing leg (sell in normalized space): consume from most recent opens
             to_close = float(-q)
-            result.at[idx, 'q'] = 0.0
+            result.at[idx, "q"] = 0.0
             while to_close > 1e-10:
                 if not stack:
                     # Should not happen under stated assumptions, but guard anyway
@@ -361,14 +365,14 @@ def lifo_remove(df):
 
     # Restore remaining open quantities into their original rows
     for open_idx, open_qty in stack:
-        result.at[open_idx, 'q'] = open_qty
+        result.at[open_idx, "q"] = open_qty
 
     # Keep only positive remaining legs (in normalized space)
     result = result[result.q > 1e-10]
 
     # Flip the sign back if we normalized for short positions
     if flipped:
-        result.loc[:, 'q'] *= -1
+        result.loc[:, "q"] *= -1
 
     result.reset_index(drop=True, inplace=True)
     return result

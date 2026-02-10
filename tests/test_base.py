@@ -7,15 +7,15 @@ from tbgutils.dt import our_localize
 
 
 def fake_trades(n=100):
-    df = pd.DataFrame(columns=['dt', 'q', 'p', 'cs', 't', 'a'])
+    df = pd.DataFrame(columns=["dt", "q", "p", "cs", "t", "a"])
 
-    df['dt'] = pd.to_datetime(np.arange(1, n * 1e9, 1e9))
+    df["dt"] = pd.to_datetime(np.arange(1, n * 1e9, 1e9))
 
     # quanitites
     np.random.seed(42)
     x = np.random.randint(0, 2, size=n)
     x[x == 0] = -1
-    df['q'] = x
+    df["q"] = x
     np.random.seed(73)
 
     # Prices
@@ -27,20 +27,20 @@ def fake_trades(n=100):
     p[2 * i] = 0
     p[3 * i] = 0
 
-    df['p'] = p
+    df["p"] = p
 
     # The rest
-    df['cs'] = np.full(n, 1)
-    df['t'] = np.full(n, 'TICKER')
-    df['a'] = np.full(n, 'ACCOUNT')
+    df["cs"] = np.full(n, 1)
+    df["t"] = np.full(n, "TICKER")
+    df["a"] = np.full(n, "ACCOUNT")
 
     return df
 
 
 class TradesBaseTest(unittest.TestCase):
     def setUp(self, a=None, t=None):
-        fn = os.path.join(os.path.dirname(__file__), 'trades.csv')
-        df = pd.read_csv(fn, parse_dates=['dt'])
+        fn = os.path.join(os.path.dirname(__file__), "trades.csv")
+        df = pd.read_csv(fn, parse_dates=["dt"])
 
         self.df = df
 
@@ -56,5 +56,5 @@ class TradesBaseTest(unittest.TestCase):
 
         df = df[df.dt <= eoy]
         df.reset_index(drop=True, inplace=True)
-        df = df.sort_values(by=['dt'], ascending=True, ignore_index=True)
+        df = df.sort_values(by=["dt"], ascending=True, ignore_index=True)
         return df, dt
